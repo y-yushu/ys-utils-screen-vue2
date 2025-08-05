@@ -1,5 +1,5 @@
 <template>
-  <div ref="v-container" class="" :style="{ ...style.box, ...boxStyle }">
+  <div ref="v-container" class="v-screen-box" :style="{ ...style.box, ...boxStyle }">
     <div ref="v-box" class="screen-wrapper" :style="{ ...style.wrapper, ...wrapperStyle }">
       <slot></slot>
     </div>
@@ -7,25 +7,25 @@
 </template>
 
 <script>
-// /**
-//  * 防抖函数
-//  * @param {Function} fn
-//  * @param {number} delay
-//  * @returns {() => void}
-//  */
-// function debounce(fn, delay) {
-//   let timer
-//   return function (...args) {
-//     if (timer) clearTimeout(timer)
-//     timer = setTimeout(
-//       () => {
-//         if (typeof fn === 'function') fn.apply(null, args)
-//         clearTimeout(timer)
-//       },
-//       delay > 0 ? delay : 100
-//     )
-//   }
-// }
+/**
+ * 防抖函数
+ * @param {Function} fn
+ * @param {number} delay
+ * @returns {() => void}
+ */
+function debounce(fn, delay) {
+  let timer
+  return function (...args) {
+    if (timer) clearTimeout(timer)
+    timer = setTimeout(
+      () => {
+        if (typeof fn === 'function') fn.apply(null, args)
+        clearTimeout(timer)
+      },
+      delay > 0 ? delay : 100
+    )
+  }
+}
 
 export default {
   name: 'YsScaleScreen',
@@ -66,8 +66,8 @@ export default {
           overflow: 'hidden',
           backgroundSize: '100% 100%',
           background: '#000',
-          width: '100vw',
-          height: '100vh'
+          width: '100%',
+          height: '100%'
         },
         wrapper: {
           transitionProperty: 'all',
@@ -85,16 +85,30 @@ export default {
         originalWidth: 0,
         originalHeight: 0,
         observer: null
-      }
+      },
+
+      resizeObserver: null
     }
   },
   mounted() {
-    this.initSize().then(() => {
-      this.updateSize()
-      this.updateScale()
+    const onResize = debounce(() => {
+      this.initSize().then(() => {
+        this.updateSize()
+        this.updateScale()
+      })
+    }, this.delay)
+    onResize()
+    this.resizeObserver = new ResizeObserver(() => {
+      onResize()
     })
+    this.resizeObserver.observe(this.$refs['v-container'])
   },
-  beforeDestroy() {},
+  beforeDestroy() {
+    if (this.resizeObserver) {
+      this.resizeObserver.unobserve(this.$refs['v-container'])
+      this.resizeObserver = null
+    }
+  },
   methods: {
     initSize() {
       return new Promise(resolve => {
@@ -103,11 +117,9 @@ export default {
           this.state.width = this.width
           this.state.height = this.height
 
-          if (!this.state.originalHeight || !this.state.width) {
-            const { width, height } = this.$refs['v-container'].getBoundingClientRect()
-            this.state.originalWidth = width
-            this.state.originalHeight = height
-          }
+          const { width, height } = this.$refs['v-container'].getBoundingClientRect()
+          this.state.originalWidth = width
+          this.state.originalHeight = height
 
           resolve()
         })
@@ -148,13 +160,16 @@ export default {
     },
 
     setScale(scale) {
-      console.log('🚀 ~ autoScale ~ scale:', scale)
-      // const box = this.$refs['v-box']
-      // const domWidth = el.value.clientWidth
-      // const domHeight = el.value.clientHeight
+      const box = this.$refs['v-box']
+      const domWidth = box.clientWidth
+      const domHeight = box.clientHeight
+      const currentWidth = this.state.originalWidth
+      const currentHeight = this.state.originalHeight
+      box.style.transform = `scale(${scale},${scale})`
+      let mx = Math.max((currentWidth - domWidth * scale) / 2, 0)
+      let my = Math.max((currentHeight - domHeight * scale) / 2, 0)
+      box.style.margin = `${my}px ${mx}px`
     }
   }
 }
 </script>
-
-<style scope></style>
