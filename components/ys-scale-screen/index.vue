@@ -29,7 +29,17 @@ function debounce(fn, delay) {
 
 export default {
   name: 'YsScaleScreen',
+  provide() {
+    return {
+      getEdit: () => this.isEdit,
+      getScale: () => this.scale
+    }
+  },
   props: {
+    isEdit: {
+      type: Boolean,
+      default: false
+    },
     width: {
       type: [String, Number],
       default: 1920
@@ -65,7 +75,7 @@ export default {
         box: {
           overflow: 'hidden',
           backgroundSize: '100% 100%',
-          background: '#000',
+          // background: '#000',
           width: '100%',
           height: '100%'
         },
@@ -86,6 +96,8 @@ export default {
         originalHeight: 0,
         observer: null
       },
+
+      scale: 1, // 缩放比例
 
       resizeObserver: null
     }
@@ -169,6 +181,8 @@ export default {
       let mx = Math.max((currentWidth - domWidth * scale) / 2, 0)
       let my = Math.max((currentHeight - domHeight * scale) / 2, 0)
       box.style.margin = `${my}px ${mx}px`
+      // 记录缩放比例
+      this.scale = scale
     }
   }
 }
